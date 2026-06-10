@@ -121,3 +121,27 @@ async def evaluate_interview_answer(
         "interview_id": str(result.inserted_id),
         "evaluation": evaluation
     }
+
+@router.get("/history")
+async def get_interview_history(
+    current_user: dict = Depends(get_current_user)
+):
+    interviews_cursor = database["interviews"].find(
+        {"user_id": str(current_user["_id"])}
+    ).sort("_id", -1)
+
+    interviews = []
+
+    async for interview in interviews_cursor:
+        interviews.append({
+            "interview_id": str(interview["_id"]),
+            "question": interview["question"],
+            "answer": interview["answer"],
+            "evaluation": interview["evaluation"]
+        })
+
+    return {
+        "message": "Interview history fetched successfully",
+        "total_interviews": len(interviews),
+        "interviews": interviews
+    }
