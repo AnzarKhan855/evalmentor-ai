@@ -98,6 +98,7 @@ async def generate_questions(
         "questions": questions
     }
 
+
 @router.post("/evaluate-answer")
 async def evaluate_interview_answer(
     question: str,
@@ -106,7 +107,17 @@ async def evaluate_interview_answer(
 ):
     evaluation = evaluate_answer(question, answer)
 
+    interview_data = {
+        "user_id": str(current_user["_id"]),
+        "question": question,
+        "answer": answer,
+        "evaluation": evaluation
+    }
+
+    result = await database["interviews"].insert_one(interview_data)
+
     return {
         "message": "Answer evaluated successfully",
+        "interview_id": str(result.inserted_id),
         "evaluation": evaluation
     }
