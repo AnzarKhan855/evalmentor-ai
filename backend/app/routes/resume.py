@@ -1,3 +1,4 @@
+from app.services.pdf_parser import extract_text_from_pdf
 import os
 import uuid
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
@@ -37,6 +38,7 @@ async def upload_resume(
 
     with open(file_path, "wb") as f:
         f.write(file_content)
+        extracted_text = extract_text_from_pdf(file_path)
 
     resume_data = {
         "user_id": str(current_user["_id"]),
@@ -45,6 +47,7 @@ async def upload_resume(
         "file_path": file_path,
         "content_type": file.content_type,
         "file_size": len(file_content),
+        "extracted_text": extracted_text
     }
 
     result = await database["resumes"].insert_one(resume_data)
