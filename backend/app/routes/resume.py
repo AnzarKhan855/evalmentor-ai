@@ -1,3 +1,4 @@
+from app.services.evaluation_service import evaluate_answer
 from app.services.groq_service import generate_interview_questions
 from app.services.resume_parser import parse_resume_text
 from app.services.pdf_parser import extract_text_from_pdf
@@ -95,4 +96,17 @@ async def generate_questions(
     return {
         "message": "Interview questions generated successfully",
         "questions": questions
+    }
+
+@router.post("/evaluate-answer")
+async def evaluate_interview_answer(
+    question: str,
+    answer: str,
+    current_user: dict = Depends(get_current_user)
+):
+    evaluation = evaluate_answer(question, answer)
+
+    return {
+        "message": "Answer evaluated successfully",
+        "evaluation": evaluation
     }
