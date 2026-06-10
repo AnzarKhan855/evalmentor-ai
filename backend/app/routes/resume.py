@@ -145,3 +145,29 @@ async def get_interview_history(
         "total_interviews": len(interviews),
         "interviews": interviews
     }
+
+@router.get("/dashboard")
+async def dashboard(
+    current_user: dict = Depends(get_current_user)
+):
+    interviews_cursor = database["interviews"].find(
+        {"user_id": str(current_user["_id"])}
+    ).sort("_id", -1)
+
+    interviews = []
+
+    async for interview in interviews_cursor:
+        interviews.append({
+            "interview_id": str(interview["_id"]),
+            "question": interview["question"],
+            "answer": interview["answer"],
+            "evaluation": interview["evaluation"]
+        })
+
+    total_interviews = len(interviews)
+
+    return {
+        "message": "Dashboard fetched successfully",
+        "total_interviews": total_interviews,
+        "recent_interviews": interviews[:5]
+    }
