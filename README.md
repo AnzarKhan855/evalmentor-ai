@@ -23,6 +23,12 @@ The goal of this project is to demonstrate practical skills in:
 
 ---
 
+## Screenshots
+
+### Dashboard Analytics
+
+![EvalMentor AI Dashboard Analytics](screenshots/dashboard.png)
+
 ## Features
 
 ### Authentication
