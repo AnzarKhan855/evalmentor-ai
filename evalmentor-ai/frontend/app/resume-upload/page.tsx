@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { uploadResume } from "../services/resumeService";
+import InterviewQuestions from "../../components/InterviewQuestions";
 
 type ParsedData = {
   name?: string;
@@ -128,6 +129,7 @@ export default function ResumeUploadPage() {
         </div>
 
         {parsedData && (
+           <>
           <div className="bg-white rounded-2xl shadow-lg p-8 mt-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               Parsed Resume Details
@@ -167,6 +169,8 @@ export default function ResumeUploadPage() {
               </div>
             </div>
           </div>
+          <InterviewQuestions />
+    </>
         )}
       </div>
     </div>
