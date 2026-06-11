@@ -1,9 +1,11 @@
-from app.services.evaluation_service import evaluate_answer
+
+from app.services.evaluation_service import evaluate_answer, extract_score
 from app.services.groq_service import generate_interview_questions
 from app.services.resume_parser import parse_resume_text
 from app.services.pdf_parser import extract_text_from_pdf
 import os
 import uuid
+from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from app.utils.dependencies import get_current_user
 from app.database import database
@@ -106,12 +108,15 @@ async def evaluate_interview_answer(
     current_user: dict = Depends(get_current_user)
 ):
     evaluation = evaluate_answer(question, answer)
+    score = extract_score(evaluation)
 
     interview_data = {
         "user_id": str(current_user["_id"]),
         "question": question,
         "answer": answer,
-        "evaluation": evaluation
+        "evaluation": evaluation,
+        "score": score,
+        "created_at": datetime.utcnow()
     }
 
     result = await database["interviews"].insert_one(interview_data)
@@ -121,7 +126,6 @@ async def evaluate_interview_answer(
         "interview_id": str(result.inserted_id),
         "evaluation": evaluation
     }
-
 @router.get("/history")
 async def get_interview_history(
     current_user: dict = Depends(get_current_user)
@@ -133,13 +137,14 @@ async def get_interview_history(
     interviews = []
 
     async for interview in interviews_cursor:
-        interviews.append({
-            "interview_id": str(interview["_id"]),
-            "question": interview["question"],
-            "answer": interview["answer"],
-            "evaluation": interview["evaluation"]
-        })
-
+     interviews.append({
+        "interview_id": str(interview["_id"]),
+        "question": interview.get("question"),
+        "answer": interview.get("answer"),
+        "evaluation": interview.get("evaluation"),
+        "score": interview.get("score"),
+        "created_at": interview.get("created_at")
+})  
     return {
         "message": "Interview history fetched successfully",
         "total_interviews": len(interviews),

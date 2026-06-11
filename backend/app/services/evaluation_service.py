@@ -1,8 +1,16 @@
+import re
 from groq import Groq
 from app.config import GROQ_API_KEY
 
 client = Groq(api_key=GROQ_API_KEY)
 
+def extract_score(evaluation_text: str):
+    match = re.search(r"Score:\s*(\d+(?:\.\d+)?)\s*/\s*10", evaluation_text, re.IGNORECASE)
+
+    if match:
+        return float(match.group(1))
+
+    return None
 
 def evaluate_answer(question: str, answer: str):
     prompt = f"""
