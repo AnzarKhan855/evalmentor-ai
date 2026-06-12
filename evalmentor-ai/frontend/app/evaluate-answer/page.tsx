@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
 
+type EvaluationResponse = {
+  evaluation?: string;
+  feedback?: string;
+  result?: string;
+  detail?: string;
+};
+
 export default function EvaluateAnswerPage() {
   const router = useRouter();
 
@@ -25,17 +32,22 @@ export default function EvaluateAnswerPage() {
     }
   }, []);
 
+  const getToken = () => {
+    return (
+      localStorage.getItem("token") ||
+      localStorage.getItem("access_token") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("authToken")
+    );
+  };
+
   const handleEvaluateAnswer = async () => {
     try {
       setLoading(true);
       setError("");
       setEvaluation("");
 
-      const token =
-        localStorage.getItem("token") ||
-        localStorage.getItem("access_token") ||
-        localStorage.getItem("accessToken") ||
-        localStorage.getItem("authToken");
+      const token = getToken();
 
       if (!token) {
         throw new Error("Please login again. Token not found.");
@@ -45,8 +57,16 @@ export default function EvaluateAnswerPage() {
         throw new Error("Backend API URL is missing.");
       }
 
+      if (!question.trim()) {
+        throw new Error("Question is missing. Please select a question again.");
+      }
+
+      if (!answer.trim()) {
+        throw new Error("Please write your answer first.");
+      }
+
       const response = await fetch(
-        `${API_BASE_URL}/api/interview/evaluate-answer`,
+        `${API_BASE_URL}/api/resume/evaluate-answer`,
         {
           method: "POST",
           headers: {
@@ -60,21 +80,33 @@ export default function EvaluateAnswerPage() {
         }
       );
 
-      const data = await response.json();
+      const contentType = response.headers.get("content-type");
 
-      if (!response.ok) {
-        throw new Error(data.detail || "Failed to evaluate answer");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        throw new Error("Backend returned an invalid response.");
       }
 
-      setEvaluation(
+      const data: EvaluationResponse = await response.json();
+
+      console.log("Evaluate Answer API Response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to evaluate answer.");
+      }
+
+      const evaluationText =
         data.evaluation ||
-          data.feedback ||
-          data.result ||
-          JSON.stringify(data, null, 2)
-      );
+        data.feedback ||
+        data.result ||
+        JSON.stringify(data, null, 2);
+
+      setEvaluation(evaluationText);
     } catch (err) {
+      console.error(err);
       setError(
-        err instanceof Error ? err.message : "Failed to evaluate answer"
+        err instanceof Error ? err.message : "Failed to evaluate answer."
       );
     } finally {
       setLoading(false);
