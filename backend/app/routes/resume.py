@@ -204,8 +204,23 @@ async def dashboard(
 
     total_interviews = len(interviews)
 
+    valid_scores = []
+
+    for interview in interviews:
+        score = interview.get("score")
+
+        if isinstance(score, (int, float)):
+            valid_scores.append(score)
+
+    average_score = (
+        round(sum(valid_scores) / len(valid_scores), 1)
+        if valid_scores
+        else 0
+    )
+
     return {
         "message": "Dashboard fetched successfully",
         "total_interviews": total_interviews,
+        "average_score": average_score,
         "recent_interviews": interviews[:5]
     }
