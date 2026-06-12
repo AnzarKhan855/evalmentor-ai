@@ -29,6 +29,7 @@ export default function DashboardPage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showRecentInterviews, setShowRecentInterviews] = useState(false);
 
   const getToken = () => {
     return (
@@ -109,156 +110,164 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
-  const handleEvaluateAnswer = () => {
-    const selectedQuestion = localStorage.getItem("selectedQuestion");
-
-    if (!selectedQuestion) {
-      alert("Please generate questions and select one question first.");
-      router.push("/interview-questions");
-      return;
-    }
-
-    router.push("/evaluate-answer");
-  };
-
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-8">
+      <main className="min-h-screen bg-gradient-to-br from-[#050816] via-[#0f172a] to-[#111827] p-8">
         <div className="mx-auto max-w-6xl">
-          <p className="text-blue-100">Loading dashboard...</p>
+          <p className="text-slate-200">Loading dashboard...</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-8">
+    <main className="min-h-screen bg-gradient-to-br from-[#050816] via-[#0f172a] to-[#111827] p-8">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-col gap-5 rounded-2xl border border-blue-900/40 bg-white/10 p-8 shadow-2xl backdrop-blur md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-white">
-              EvalMentor AI Dashboard
-            </h1>
+        <section className="mb-8 rounded-3xl border border-white/10 bg-white/10 p-8 shadow-2xl backdrop-blur">
+          <h1 className="text-4xl font-bold text-white">
+            EvalMentor AI Dashboard
+          </h1>
 
-            <p className="mt-2 text-blue-100">
-              Manage your resume, generate interview questions, and evaluate
-              answers with AI.
-            </p>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            className="rounded-lg bg-red-600 px-5 py-3 font-medium text-white hover:bg-red-700"
-          >
-            Logout
-          </button>
-        </div>
+          <p className="mt-3 max-w-2xl text-slate-300">
+            Upload your resume, generate personalized interview questions, and
+            track your AI interview performance.
+          </p>
+        </section>
 
         {error && (
-          <p className="mb-6 rounded-lg border border-red-400 bg-red-100 p-4 text-red-700">
+          <p className="mb-6 rounded-xl border border-red-400 bg-red-100 p-4 text-red-700">
             {error}
           </p>
         )}
 
-        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+        <section className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
           <button
             onClick={() => router.push("/resume-upload")}
-            className="rounded-2xl border border-blue-900/40 bg-white/10 p-6 text-left shadow-xl backdrop-blur transition hover:-translate-y-1 hover:bg-white/15"
+            className="rounded-3xl border border-white/10 bg-white/10 p-7 text-left shadow-xl backdrop-blur transition hover:-translate-y-1 hover:bg-white/15"
           >
-            <h2 className="text-xl font-semibold text-white">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-2xl">
+              📄
+            </div>
+
+            <h2 className="text-2xl font-semibold text-white">
               Upload Resume
             </h2>
 
-            <p className="mt-2 text-blue-100">
-              Upload your PDF resume and view parsed resume details only.
+            <p className="mt-3 text-slate-300">
+              Upload your PDF resume and view extracted parsed details only.
             </p>
           </button>
 
           <button
             onClick={() => router.push("/interview-questions")}
-            className="rounded-2xl border border-blue-900/40 bg-white/10 p-6 text-left shadow-xl backdrop-blur transition hover:-translate-y-1 hover:bg-white/15"
+            className="rounded-3xl border border-white/10 bg-white/10 p-7 text-left shadow-xl backdrop-blur transition hover:-translate-y-1 hover:bg-white/15"
           >
-            <h2 className="text-xl font-semibold text-white">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/20 text-2xl">
+              🤖
+            </div>
+
+            <h2 className="text-2xl font-semibold text-white">
               Generate Questions
             </h2>
 
-            <p className="mt-2 text-blue-100">
-              Generate AI interview questions from your latest uploaded resume.
+            <p className="mt-3 text-slate-300">
+              Generate interview questions from your latest uploaded resume and
+              answer them from there.
             </p>
           </button>
+        </section>
 
-          <button
-            onClick={handleEvaluateAnswer}
-            className="rounded-2xl border border-blue-900/40 bg-white/10 p-6 text-left shadow-xl backdrop-blur transition hover:-translate-y-1 hover:bg-white/15"
-          >
-            <h2 className="text-xl font-semibold text-white">
-              Evaluate Answer
+        <section className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="rounded-3xl border border-white/10 bg-white/10 p-7 shadow-2xl backdrop-blur">
+            <h2 className="text-2xl font-semibold text-white">Analytics</h2>
+
+            <div className="mt-5 rounded-2xl bg-white p-6 shadow">
+              <p className="text-gray-600">Total Interviews</p>
+
+              <p className="mt-2 text-5xl font-bold text-indigo-700">
+                {dashboardData?.total_interviews || 0}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/10 p-7 shadow-2xl backdrop-blur">
+            <h2 className="text-2xl font-semibold text-white">
+              Recent Interviews
             </h2>
 
-            <p className="mt-2 text-blue-100">
-              Evaluate the question you selected from the questions page.
+            <p className="mt-3 text-slate-300">
+              View your latest interview attempts and AI feedback only when
+              needed.
             </p>
-          </button>
-        </div>
 
-        <div className="mb-8 rounded-2xl border border-blue-900/40 bg-white/10 p-6 shadow-2xl backdrop-blur">
-          <h2 className="mb-4 text-2xl font-semibold text-white">Analytics</h2>
-
-          <div className="rounded-xl bg-white p-6">
-            <p className="text-lg text-gray-700">Total Interviews</p>
-
-            <p className="mt-2 text-4xl font-bold text-blue-700">
-              {dashboardData?.total_interviews || 0}
-            </p>
+            <button
+              onClick={() => setShowRecentInterviews(!showRecentInterviews)}
+              className="mt-6 rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
+            >
+              {showRecentInterviews
+                ? "Hide Recent Interviews"
+                : "View Recent Interviews"}
+            </button>
           </div>
-        </div>
+        </section>
 
-        <div className="rounded-2xl border border-blue-900/40 bg-white/10 p-6 shadow-2xl backdrop-blur">
-          <h2 className="mb-4 text-2xl font-semibold text-white">
-            Recent Interviews
-          </h2>
+        {showRecentInterviews && (
+          <section className="mb-8 rounded-3xl border border-white/10 bg-white/10 p-7 shadow-2xl backdrop-blur">
+            <h2 className="mb-5 text-2xl font-semibold text-white">
+              Recent Interviews
+            </h2>
 
-          {!dashboardData?.recent_interviews ||
-          dashboardData.recent_interviews.length === 0 ? (
-            <p className="rounded-xl bg-white p-5 text-gray-600">
-              No interviews found yet.
-            </p>
-          ) : (
-            <div className="space-y-5">
-              {dashboardData.recent_interviews.map((item) => (
-                <div
-                  key={item.interview_id}
-                  className="rounded-xl bg-white p-6 shadow"
-                >
-                  <p className="font-semibold text-gray-900">
-                    Question: {item.question || "Question not found"}
-                  </p>
+            {!dashboardData?.recent_interviews ||
+            dashboardData.recent_interviews.length === 0 ? (
+              <p className="rounded-2xl bg-white p-5 text-gray-600">
+                No interviews found yet.
+              </p>
+            ) : (
+              <div className="space-y-5">
+                {dashboardData.recent_interviews.map((item) => (
+                  <div
+                    key={item.interview_id}
+                    className="rounded-2xl bg-white p-6 shadow"
+                  >
+                    <p className="font-semibold text-gray-900">
+                      Question: {item.question || "Question not found"}
+                    </p>
 
-                  <p className="mt-3 text-gray-700">
-                    <span className="font-semibold">Answer:</span>{" "}
-                    {item.answer || "Answer not found"}
-                  </p>
-
-                  {item.score !== undefined && item.score !== null && (
                     <p className="mt-3 text-gray-700">
-                      <span className="font-semibold">Score:</span>{" "}
-                      {item.score}/10
-                    </p>
-                  )}
-
-                  <div className="mt-4 rounded-lg bg-gray-50 p-4">
-                    <p className="mb-2 font-semibold text-gray-900">
-                      Evaluation:
+                      <span className="font-semibold">Answer:</span>{" "}
+                      {item.answer || "Answer not found"}
                     </p>
 
-                    <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                      {formatEvaluation(item.evaluation)}
-                    </pre>
+                    {item.score !== undefined && item.score !== null && (
+                      <p className="mt-3 text-gray-700">
+                        <span className="font-semibold">Score:</span>{" "}
+                        {item.score}/10
+                      </p>
+                    )}
+
+                    <details className="mt-4 rounded-xl bg-gray-50 p-4">
+                      <summary className="cursor-pointer font-semibold text-gray-900">
+                        View Evaluation
+                      </summary>
+
+                      <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap text-sm text-gray-700">
+                        {formatEvaluation(item.evaluation)}
+                      </pre>
+                    </details>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        <div className="mt-10 flex justify-center">
+          <button
+            onClick={handleLogout}
+            className="rounded-xl bg-red-600 px-8 py-3 font-semibold text-white shadow-lg transition hover:bg-red-700"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </main>

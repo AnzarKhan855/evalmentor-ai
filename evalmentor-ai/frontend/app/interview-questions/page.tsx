@@ -16,10 +16,14 @@ export default function InterviewQuestionsPage() {
 
     if (savedQuestions) {
       try {
-        const parsedQuestions = JSON.parse(savedQuestions);
+        const parsedQuestions: unknown = JSON.parse(savedQuestions);
 
         if (Array.isArray(parsedQuestions)) {
-          setQuestions(parsedQuestions);
+          const validQuestions = parsedQuestions.filter(
+            (question): question is string => typeof question === "string"
+          );
+
+          setQuestions(validQuestions);
         }
       } catch {
         localStorage.removeItem("generatedQuestions");
@@ -43,46 +47,54 @@ export default function InterviewQuestionsPage() {
       responseData.data?.questions ||
       responseData.message;
 
+    const cleanQuestion = (question: string) => {
+      return question
+        .replace(/^\d+[\).\-\s]*/, "")
+        .replace(/^[-•]\s*/, "")
+        .trim();
+    };
+
+    const isValidQuestion = (question: string) => {
+      const lowerQuestion = question.toLowerCase();
+
+      return (
+        question.length > 0 &&
+        !lowerQuestion.includes("here are") &&
+        !lowerQuestion.includes("personalized interview questions") &&
+        !lowerQuestion.includes("based on his resume") &&
+        !lowerQuestion.includes("based on her resume") &&
+        !lowerQuestion.includes("based on the resume") &&
+        !lowerQuestion.includes("certainly") &&
+        !lowerQuestion.includes("sure")
+      );
+    };
+
     if (Array.isArray(rawQuestions)) {
       return rawQuestions
-        .map((q: unknown) => {
-          if (typeof q === "string") return q;
-
-          if (
-            typeof q === "object" &&
-            q !== null &&
-            "question" in q &&
-            typeof (q as { question?: unknown }).question === "string"
-          ) {
-            return (q as { question: string }).question;
+        .map((question: unknown) => {
+          if (typeof question === "string") {
+            return cleanQuestion(question);
           }
 
-          return JSON.stringify(q);
+          if (
+            typeof question === "object" &&
+            question !== null &&
+            "question" in question &&
+            typeof (question as { question?: unknown }).question === "string"
+          ) {
+            return cleanQuestion((question as { question: string }).question);
+          }
+
+          return "";
         })
-        .filter((q) => q.trim().length > 0)
-        .filter(
-          (q) =>
-            !q.toLowerCase().includes("here are") &&
-            !q.toLowerCase().includes("personalized interview questions") &&
-            !q.toLowerCase().includes("based on his resume") &&
-            !q.toLowerCase().includes("based on her resume") &&
-            !q.toLowerCase().includes("based on the resume")
-        );
+        .filter(isValidQuestion);
     }
 
     if (typeof rawQuestions === "string") {
       return rawQuestions
         .split("\n")
-        .map((q) => q.replace(/^\d+[\).\-\s]*/, "").trim())
-        .filter((q) => q.length > 0)
-        .filter(
-          (q) =>
-            !q.toLowerCase().includes("here are") &&
-            !q.toLowerCase().includes("personalized interview questions") &&
-            !q.toLowerCase().includes("based on his resume") &&
-            !q.toLowerCase().includes("based on her resume") &&
-            !q.toLowerCase().includes("based on the resume")
-        );
+        .map((question) => cleanQuestion(question))
+        .filter(isValidQuestion);
     }
 
     return [];
@@ -97,16 +109,21 @@ export default function InterviewQuestionsPage() {
       const normalizedQuestions = normalizeQuestions(data);
 
       if (normalizedQuestions.length === 0) {
-        setError("Questions were generated, but the response format was not readable.");
+        setError(
+          "Questions were generated, but the response format was not readable."
+        );
         return;
       }
 
       setQuestions(normalizedQuestions);
-      localStorage.setItem("generatedQuestions", JSON.stringify(normalizedQuestions));
+      localStorage.setItem(
+        "generatedQuestions",
+        JSON.stringify(normalizedQuestions)
+      );
     } catch (err) {
       console.error(err);
       setError(
-        err instanceof Error ? err.message : "Failed to generate questions"
+        err instanceof Error ? err.message : "Failed to generate questions."
       );
     } finally {
       setLoading(false);
@@ -120,69 +137,85 @@ export default function InterviewQuestionsPage() {
 
   const handleClearQuestions = () => {
     localStorage.removeItem("generatedQuestions");
+    localStorage.removeItem("selectedQuestion");
     setQuestions([]);
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-8">
-      <div className="mx-auto max-w-5xl rounded-2xl border border-blue-900/40 bg-white/10 p-8 shadow-2xl backdrop-blur">
+    <main className="min-h-screen bg-gradient-to-br from-[#050816] via-[#0f172a] to-[#111827] px-4 py-10">
+      <div className="mx-auto max-w-5xl">
         <button
           onClick={() => router.push("/dashboard")}
-          className="mb-6 text-blue-300 hover:underline"
+          className="mb-6 text-indigo-300 hover:underline"
         >
           ← Back to Dashboard
         </button>
 
-        <h1 className="text-4xl font-bold text-white">Interview Questions</h1>
+        <section className="rounded-3xl border border-white/10 bg-white/10 p-8 shadow-2xl backdrop-blur">
+          <h1 className="text-4xl font-bold text-white">
+            Interview Questions
+          </h1>
 
-        <p className="mt-2 text-blue-100">
-          Generate AI interview questions from your latest uploaded resume.
-        </p>
-
-        <div className="mt-6 flex gap-4">
-          <button
-            onClick={handleGenerateQuestions}
-            disabled={loading}
-            className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-          >
-            {loading ? "Generating..." : "Generate Questions"}
-          </button>
-
-          {questions.length > 0 && (
-            <button
-              onClick={handleClearQuestions}
-              className="rounded-lg bg-slate-700 px-5 py-3 font-medium text-white hover:bg-slate-800"
-            >
-              Clear Questions
-            </button>
-          )}
-        </div>
-
-        {error && (
-          <p className="mt-5 rounded-lg border border-red-400 bg-red-100 p-4 text-red-700">
-            {error}
+          <p className="mt-3 max-w-2xl text-slate-300">
+            Generate personalized AI interview questions from your latest
+            uploaded resume.
           </p>
+
+          <div className="mt-6 flex flex-col gap-4 sm:flex-row">
+            <button
+              onClick={handleGenerateQuestions}
+              disabled={loading}
+              className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-500"
+            >
+              {loading ? "Generating..." : "Generate Questions"}
+            </button>
+
+            {questions.length > 0 && (
+              <button
+                onClick={handleClearQuestions}
+                className="rounded-xl bg-slate-700 px-6 py-3 font-semibold text-white transition hover:bg-slate-800"
+              >
+                Clear Questions
+              </button>
+            )}
+          </div>
+
+          {error && (
+            <p className="mt-5 rounded-xl border border-red-400 bg-red-100 p-4 text-red-700">
+              {error}
+            </p>
+          )}
+        </section>
+
+        {questions.length > 0 && (
+          <section className="mt-8 space-y-5">
+            {questions.map((question, index) => (
+              <div
+                key={`${question}-${index}`}
+                className="rounded-2xl bg-white p-6 shadow-xl"
+              >
+                <p className="text-lg font-semibold text-gray-900">
+                  {index + 1}. {question}
+                </p>
+
+                <button
+                  onClick={() => handleAnswerQuestion(question)}
+                  className="mt-5 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700"
+                >
+                  Answer This Question
+                </button>
+              </div>
+            ))}
+          </section>
         )}
 
-        <div className="mt-8 space-y-5">
-          {questions.map((question, index) => (
-            <div
-              key={`${question}-${index}`}
-              className="rounded-xl border border-blue-900/30 bg-white p-6 shadow"
-            >
-              <p className="text-lg font-medium text-gray-900">
-                {index + 1}. {question}
-              </p>
-
-              <button
-                onClick={() => handleAnswerQuestion(question)}
-                className="mt-4 rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700"
-              >
-                Answer This Question
-              </button>
-            </div>
-          ))}
-        </div>
+        {questions.length === 0 && !error && (
+          <div className="mt-8 rounded-3xl border border-white/10 bg-white/10 p-8 text-center shadow-2xl backdrop-blur">
+            <p className="text-slate-300">
+              No questions generated yet. Click Generate Questions to start.
+            </p>
+          </div>
+        )}
       </div>
     </main>
   );
