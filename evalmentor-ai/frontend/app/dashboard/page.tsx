@@ -1,208 +1,196 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import InterviewHistory from "../../src/components/InterviewHistory";
-import { getDashboardData } from "../../src/services/dashboardService";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-type Interview = {
-  interview_id: string;
-  question: string;
-  answer: string;
-  evaluation: string;
-};
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
 
 type DashboardData = {
-  message: string;
-  total_interviews: number;
-  recent_interviews: Interview[];
+  total_interviews?: number;
+  recent_interviews?: {
+    interview_id: string;
+    question: string;
+    answer: string;
+    evaluation: string;
+    score?: number;
+  }[];
 };
 
-function extractScore(evaluation: string): number | null {
-  const match = evaluation.match(/Score:\s*(\d+(?:\.\d+)?)\s*\/\s*10/i);
-  return match ? Number(match[1]) : null;
-}
-
 export default function DashboardPage() {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const router = useRouter();
+
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchDashboard = async () => {
       try {
-        setLoading(true);
-        setError("");
+        const token =
+          localStorage.getItem("token") ||
+          localStorage.getItem("access_token") ||
+          localStorage.getItem("accessToken") ||
+          localStorage.getItem("authToken");
 
-        const data = await getDashboardData();
-        setDashboardData(data as DashboardData);
+        if (!token) {
+          router.push("/login");
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/resume/dashboard`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || "Failed to fetch dashboard");
+        }
+
+        setDashboardData(data);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to load dashboard data"
+          err instanceof Error ? err.message : "Failed to load dashboard"
         );
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    fetchDashboard();
+  }, [router]);
 
-  const scores = useMemo(() => {
-    if (!dashboardData?.recent_interviews) return [];
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("authToken");
+    router.push("/login");
+  };
 
-    return dashboardData.recent_interviews
-      .map((interview) => extractScore(interview.evaluation))
-      .filter((score): score is number => score !== null);
-  }, [dashboardData]);
-
-  const averageScore =
-    scores.length > 0
-      ? (
-          scores.reduce((total, score) => total + score, 0) / scores.length
-        ).toFixed(1)
-      : "0";
-
-  const latestScore = scores.length > 0 ? scores[0] : 0;
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-100 p-8">
+        <p className="text-gray-700">Loading dashboard...</p>
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-gray-950 px-6 py-10 text-white">
-      <section className="mx-auto max-w-6xl">
-        <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8 shadow-lg">
-          <p className="text-sm font-medium uppercase tracking-widest text-blue-400">
-            AI Interview Agent & Evaluation Platform
-          </p>
-
-          <h1 className="mt-3 text-4xl font-bold tracking-tight">
-            EvalMentor AI Dashboard
-          </h1>
-
-          <p className="mt-4 max-w-3xl text-gray-300">
-            Track interview attempts, AI evaluation scores, and recent practice
-            history in one place.
-          </p>
-
-          <div className="mt-6 flex flex-wrap gap-4">
-            <Link
-              href="/resume-upload"
-              className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
-            >
-              Resume Upload
-            </Link>
-
-            <Link
-              href="/resume-upload"
-              className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700"
-            >
-              Generate Questions
-            </Link>
-
-            <Link
-              href="/resume-upload"
-              className="rounded-lg bg-purple-600 px-4 py-2 font-medium text-white hover:bg-purple-700"
-            >
-              Evaluate Answers
-            </Link>
+    <main className="min-h-screen bg-gray-100 p-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900">
+              EvalMentor AI Dashboard
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Manage your resume, interview questions, and AI evaluations.
+            </p>
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="rounded-lg bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700"
+          >
+            Logout
+          </button>
         </div>
 
-        {loading && (
-          <div className="mt-8 rounded-xl border border-gray-800 bg-gray-900 p-6 text-gray-300">
-            Loading dashboard analytics...
-          </div>
-        )}
-
         {error && (
-          <div className="mt-8 rounded-xl border border-red-800 bg-red-950/40 p-6 text-red-300">
+          <p className="mb-6 rounded-lg bg-red-100 p-4 text-red-700">
             {error}
-          </div>
+          </p>
         )}
 
-        {!loading && !error && dashboardData && (
-          <>
-            <section className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-md">
-                <p className="text-sm text-gray-400">Total Interviews</p>
-                <h2 className="mt-3 text-3xl font-bold">
-                  {dashboardData.total_interviews}
-                </h2>
-                <p className="mt-2 text-sm text-gray-500">
-                  Completed practice sessions
-                </p>
-              </div>
+        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <button
+            onClick={() => router.push("/resume-upload")}
+            className="rounded-xl bg-white p-6 text-left shadow hover:shadow-lg"
+          >
+            <h2 className="text-xl font-semibold text-gray-900">
+              Upload Resume
+            </h2>
+            <p className="mt-2 text-gray-600">
+              Upload your PDF resume and extract parsed details.
+            </p>
+          </button>
 
-              <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-md">
-                <p className="text-sm text-gray-400">Average Score</p>
-                <h2 className="mt-3 text-3xl font-bold">{averageScore}/10</h2>
-                <p className="mt-2 text-sm text-gray-500">
-                  Based on recent evaluations
-                </p>
-              </div>
+          <button
+            onClick={() => router.push("/interview-questions")}
+            className="rounded-xl bg-white p-6 text-left shadow hover:shadow-lg"
+          >
+            <h2 className="text-xl font-semibold text-gray-900">
+              Generate Questions
+            </h2>
+            <p className="mt-2 text-gray-600">
+              Generate AI interview questions from your latest uploaded resume.
+            </p>
+          </button>
 
-              <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-md">
-                <p className="text-sm text-gray-400">Latest Score</p>
-                <h2 className="mt-3 text-3xl font-bold">{latestScore}/10</h2>
-                <p className="mt-2 text-sm text-gray-500">
-                  Most recent interview attempt
-                </p>
-              </div>
+          <button
+            onClick={() => router.push("/evaluate-answer")}
+            className="rounded-xl bg-white p-6 text-left shadow hover:shadow-lg"
+          >
+            <h2 className="text-xl font-semibold text-gray-900">
+              Evaluate Answer
+            </h2>
+            <p className="mt-2 text-gray-600">
+              Evaluate your selected interview answer using AI.
+            </p>
+          </button>
+        </div>
 
-              <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-md">
-                <p className="text-sm text-gray-400">Recent Records</p>
-                <h2 className="mt-3 text-3xl font-bold">
-                  {dashboardData.recent_interviews.length}
-                </h2>
-                <p className="mt-2 text-sm text-gray-500">
-                  Stored in MongoDB history
-                </p>
-              </div>
-            </section>
+        <div className="rounded-xl bg-white p-6 shadow">
+          <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+            Analytics
+          </h2>
 
-            <section className="mt-8 rounded-xl border border-gray-800 bg-gray-900 p-6">
-              <h2 className="text-2xl font-semibold">Recent Activity</h2>
+          <p className="text-lg text-gray-700">
+            Total Interviews:{" "}
+            <span className="font-bold">
+              {dashboardData?.total_interviews || 0}
+            </span>
+          </p>
+        </div>
 
-              <div className="mt-5 space-y-4">
-                {dashboardData.recent_interviews.length === 0 ? (
-                  <p className="text-sm text-gray-400">
-                    No recent activity yet. Start by uploading a resume.
+        <div className="mt-8 rounded-xl bg-white p-6 shadow">
+          <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+            Recent Interviews
+          </h2>
+
+          {!dashboardData?.recent_interviews ||
+          dashboardData.recent_interviews.length === 0 ? (
+            <p className="text-gray-600">No interviews found yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {dashboardData.recent_interviews.map((item) => (
+                <div
+                  key={item.interview_id}
+                  className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+                >
+                  <p className="font-semibold text-gray-900">
+                    Question: {item.question}
                   </p>
-                ) : (
-                  dashboardData.recent_interviews
-                    .slice(0, 3)
-                    .map((interview) => {
-                      const score = extractScore(interview.evaluation);
 
-                      return (
-                        <div
-                          key={interview.interview_id}
-                          className="rounded-lg border border-gray-800 bg-gray-950 p-4"
-                        >
-                          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                            <h3 className="font-medium text-white">
-                              {interview.question}
-                            </h3>
+                  <p className="mt-2 text-gray-700">
+                    Answer: {item.answer}
+                  </p>
 
-                            <span className="w-fit rounded-full bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-300">
-                              Score: {score ?? "N/A"}/10
-                            </span>
-                          </div>
-
-                          <p className="mt-3 line-clamp-2 text-sm text-gray-400">
-                            {interview.answer}
-                          </p>
-                        </div>
-                      );
-                    })
-                )}
-              </div>
-            </section>
-          </>
-        )}
-
-        <section className="mt-8">
-          <InterviewHistory />
-        </section>
-      </section>
+                  <pre className="mt-2 whitespace-pre-wrap text-gray-700">
+                    {item.evaluation}
+                  </pre>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }
