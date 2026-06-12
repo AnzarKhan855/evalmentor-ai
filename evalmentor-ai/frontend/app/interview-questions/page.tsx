@@ -11,32 +11,50 @@ export default function InterviewQuestionsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const normalizeQuestions = (data: any): string[] => {
-    console.log("RAW QUESTIONS RESPONSE:", data);
+  const normalizeQuestions = (data: unknown): string[] => {
+  console.log("RAW QUESTIONS RESPONSE:", data);
 
-    const rawQuestions =
-      data?.questions ||
-      data?.generated_questions ||
-      data?.data?.questions ||
-      data?.message;
-
-    if (Array.isArray(rawQuestions)) {
-      return rawQuestions.map((q: any) => {
-        if (typeof q === "string") return q;
-        if (q?.question) return q.question;
-        return JSON.stringify(q);
-      });
-    }
-
-    if (typeof rawQuestions === "string") {
-      return rawQuestions
-        .split("\n")
-        .map((q) => q.replace(/^\d+[\).\-\s]*/, "").trim())
-        .filter((q) => q.length > 0);
-    }
-
-    return [];
+  const responseData = data as {
+    questions?: unknown;
+    generated_questions?: unknown;
+    data?: {
+      questions?: unknown;
+    };
+    message?: unknown;
   };
+
+  const rawQuestions =
+    responseData.questions ||
+    responseData.generated_questions ||
+    responseData.data?.questions ||
+    responseData.message;
+
+  if (Array.isArray(rawQuestions)) {
+    return rawQuestions.map((q: unknown) => {
+      if (typeof q === "string") return q;
+
+      if (
+        typeof q === "object" &&
+        q !== null &&
+        "question" in q &&
+        typeof (q as { question?: unknown }).question === "string"
+      ) {
+        return (q as { question: string }).question;
+      }
+
+      return JSON.stringify(q);
+    });
+  }
+
+  if (typeof rawQuestions === "string") {
+    return rawQuestions
+      .split("\n")
+      .map((q) => q.replace(/^\d+[\).\-\s]*/, "").trim())
+      .filter((q) => q.length > 0);
+  }
+
+  return [];
+};
 
   const handleGenerateQuestions = async () => {
     try {
