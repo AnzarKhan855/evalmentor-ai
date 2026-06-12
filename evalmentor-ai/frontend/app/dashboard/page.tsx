@@ -83,28 +83,27 @@ export default function DashboardPage() {
           </p>
 
           <div className="mt-6 flex flex-wrap gap-4">
-            <Link
-              href="/resume-upload"
-              className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
-            >
-              Resume Upload
-            </Link>
+           <Link
+             href="/resume-upload"
+    className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+  >
+    Resume Upload
+  </Link>
 
-            <Link
-              href="/interview-questions"
-              className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700"
-            >
-              Generate Questions
-            </Link>
+  <Link
+    href="/resume-upload"
+    className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700"
+  >
+    Generate Questions
+  </Link>
 
-            <Link
-              href="/evaluate-answer"
-              className="rounded-lg bg-purple-600 px-4 py-2 font-medium text-white hover:bg-purple-700"
-            >
-              Evaluate Answers
-            </Link>
-          </div>
-        </div>
+  <Link
+    href="/resume-upload"
+    className="rounded-lg bg-purple-600 px-4 py-2 font-medium text-white hover:bg-purple-700"
+  >
+    Evaluate Answers
+  </Link>
+</div>
 
         {loading && (
           <div className="mt-8 rounded-xl border border-gray-800 bg-gray-900 p-6 text-gray-300">
