@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import InterviewHistory from "../../src/components/InterviewHistory";
 import { getDashboardData } from "../../src/services/dashboardService";
 
@@ -48,16 +49,18 @@ export default function DashboardPage() {
   }, []);
 
   const scores = useMemo(() => {
-    return (
-      dashboardData?.recent_interviews
-        ?.map((interview) => extractScore(interview.evaluation))
-        .filter((score): score is number => score !== null) || []
-    );
+    if (!dashboardData?.recent_interviews) return [];
+
+    return dashboardData.recent_interviews
+      .map((interview) => extractScore(interview.evaluation))
+      .filter((score): score is number => score !== null);
   }, [dashboardData]);
 
   const averageScore =
     scores.length > 0
-      ? (scores.reduce((total, score) => total + score, 0) / scores.length).toFixed(1)
+      ? (
+          scores.reduce((total, score) => total + score, 0) / scores.length
+        ).toFixed(1)
       : "0";
 
   const latestScore = scores.length > 0 ? scores[0] : 0;
@@ -78,6 +81,29 @@ export default function DashboardPage() {
             Track interview attempts, AI evaluation scores, and recent practice
             history in one place.
           </p>
+
+          <div className="mt-6 flex flex-wrap gap-4">
+            <Link
+              href="/resume-upload"
+              className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+            >
+              Resume Upload
+            </Link>
+
+            <Link
+              href="/interview-questions"
+              className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700"
+            >
+              Generate Questions
+            </Link>
+
+            <Link
+              href="/evaluate-answer"
+              className="rounded-lg bg-purple-600 px-4 py-2 font-medium text-white hover:bg-purple-700"
+            >
+              Evaluate Answers
+            </Link>
+          </div>
         </div>
 
         {loading && (
@@ -136,34 +162,44 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-semibold">Recent Activity</h2>
 
               <div className="mt-5 space-y-4">
-                {dashboardData.recent_interviews.slice(0, 3).map((interview) => {
-                  const score = extractScore(interview.evaluation);
+                {dashboardData.recent_interviews.length === 0 ? (
+                  <p className="text-sm text-gray-400">
+                    No recent activity yet. Start by uploading a resume or
+                    generating interview questions.
+                  </p>
+                ) : (
+                  dashboardData.recent_interviews
+                    .slice(0, 3)
+                    .map((interview) => {
+                      const score = extractScore(interview.evaluation);
 
-                  return (
-                    <div
-                      key={interview.interview_id}
-                      className="rounded-lg border border-gray-800 bg-gray-950 p-4"
-                    >
-                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <h3 className="font-medium text-white">
-                          {interview.question}
-                        </h3>
+                      return (
+                        <div
+                          key={interview.interview_id}
+                          className="rounded-lg border border-gray-800 bg-gray-950 p-4"
+                        >
+                          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                            <h3 className="font-medium text-white">
+                              {interview.question}
+                            </h3>
 
-                        <span className="w-fit rounded-full bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-300">
-                          Score: {score ?? "N/A"}/10
-                        </span>
-                      </div>
+                            <span className="w-fit rounded-full bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-300">
+                              Score: {score ?? "N/A"}/10
+                            </span>
+                          </div>
 
-                      <p className="mt-3 line-clamp-2 text-sm text-gray-400">
-                        {interview.answer}
-                      </p>
-                    </div>
-                  );
-                })}
+                          <p className="mt-3 line-clamp-2 text-sm text-gray-400">
+                            {interview.answer}
+                          </p>
+                        </div>
+                      );
+                    })
+                )}
               </div>
             </section>
           </>
         )}
+
         <section className="mt-8">
           <InterviewHistory />
         </section>
@@ -171,4 +207,3 @@ export default function DashboardPage() {
     </main>
   );
 }
-  
