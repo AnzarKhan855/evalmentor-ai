@@ -48,9 +48,17 @@ export default function InterviewQuestionsPage() {
 
   if (typeof rawQuestions === "string") {
     return rawQuestions
-      .split("\n")
-      .map((q) => q.replace(/^\d+[\).\-\s]*/, "").trim())
-      .filter((q) => q.length > 0);
+  .split("\n")
+  .map((q) => q.replace(/^\d+[\).\-\s]*/, "").trim())
+  .filter((q) => q.length > 0)
+  .filter(
+    (q) =>
+      !q.toLowerCase().includes("here are") &&
+      !q.toLowerCase().includes("personalized interview questions") &&
+      !q.toLowerCase().includes("based on his resume") &&
+      !q.toLowerCase().includes("based on her resume") &&
+      !q.toLowerCase().includes("based on the resume")
+  );
   }
 
   return [];
