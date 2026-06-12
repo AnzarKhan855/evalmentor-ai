@@ -7,9 +7,9 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
 
 type EvaluationResponse = {
-  evaluation?: string;
-  feedback?: string;
-  result?: string;
+  evaluation?: unknown;
+  feedback?: unknown;
+  result?: unknown;
   detail?: string;
 };
 
@@ -96,11 +96,12 @@ export default function EvaluateAnswerPage() {
         throw new Error(data.detail || "Failed to evaluate answer.");
       }
 
+      const rawEvaluation = data.evaluation || data.feedback || data.result || data;
+      
       const evaluationText =
-        data.evaluation ||
-        data.feedback ||
-        data.result ||
-        JSON.stringify(data, null, 2);
+       typeof rawEvaluation === "string"
+        ? rawEvaluation
+       : JSON.stringify(rawEvaluation, null, 2);
 
       setEvaluation(evaluationText);
     } catch (err) {
