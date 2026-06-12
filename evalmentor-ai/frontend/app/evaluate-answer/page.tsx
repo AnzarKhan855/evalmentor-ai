@@ -12,7 +12,6 @@ type EvaluationResponse = {
   result?: unknown;
   detail?: string;
 };
-
 export default function EvaluateAnswerPage() {
   const router = useRouter();
 
