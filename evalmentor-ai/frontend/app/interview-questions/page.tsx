@@ -1,14 +1,42 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { generateInterviewQuestions } from "../../src/services/questionService";
+import { useRouter } from "next/navigation";
+import { generateInterviewQuestions } from "../src/services/questionService";
 
 export default function InterviewQuestionsPage() {
+  const router = useRouter();
+
   const [questions, setQuestions] = useState<string[]>([]);
-  const [selectedQuestion, setSelectedQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const normalizeQuestions = (data: any): string[] => {
+    console.log("RAW QUESTIONS RESPONSE:", data);
+
+    const rawQuestions =
+      data?.questions ||
+      data?.generated_questions ||
+      data?.data?.questions ||
+      data?.message;
+
+    if (Array.isArray(rawQuestions)) {
+      return rawQuestions.map((q: any) => {
+        if (typeof q === "string") return q;
+        if (q?.question) return q.question;
+        return JSON.stringify(q);
+      });
+    }
+
+    if (typeof rawQuestions === "string") {
+      return rawQuestions
+        .split("\n")
+        .map((q) => q.replace(/^\d+[\).\-\s]*/, "").trim())
+        .filter((q) => q.length > 0);
+    }
+
+    return [];
+  };
 
   const handleGenerateQuestions = async () => {
     try {
@@ -16,8 +44,16 @@ export default function InterviewQuestionsPage() {
       setError("");
 
       const data = await generateInterviewQuestions();
-      setQuestions(data.questions || []);
+      const normalizedQuestions = normalizeQuestions(data);
+
+      if (normalizedQuestions.length === 0) {
+        setError("Questions were received, but the format was not readable.");
+        return;
+      }
+
+      setQuestions(normalizedQuestions);
     } catch (err) {
+      console.error(err);
       setError(
         err instanceof Error ? err.message : "Failed to generate questions"
       );
@@ -26,84 +62,56 @@ export default function InterviewQuestionsPage() {
     }
   };
 
-  const handleSelectQuestion = (question: string) => {
-    setSelectedQuestion(question);
+  const handleEvaluate = (question: string) => {
     localStorage.setItem("selectedQuestion", question);
+    router.push("/evaluate-answer");
   };
 
   return (
-    <main className="min-h-screen bg-gray-950 px-6 py-10 text-white">
-      <section className="mx-auto max-w-5xl">
-        <Link href="/dashboard" className="text-sm text-blue-400 hover:underline">
-          ← Back to Dashboard
-        </Link>
+    <main className="min-h-screen bg-gray-100 p-8">
+      <div className="mx-auto max-w-4xl rounded-xl bg-white p-8 shadow">
+        <h1 className="mb-2 text-3xl font-bold text-gray-900">
+          Interview Questions
+        </h1>
 
-        <div className="mt-6 rounded-2xl border border-gray-800 bg-gray-900 p-8 shadow-lg">
-          <p className="text-sm font-medium uppercase tracking-widest text-green-400">
-            Step 2
+        <p className="mb-6 text-gray-600">
+          Generate AI interview questions based on your uploaded resume.
+        </p>
+
+        <button
+          onClick={handleGenerateQuestions}
+          disabled={loading}
+          className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+        >
+          {loading ? "Generating..." : "Generate Questions"}
+        </button>
+
+        {error && (
+          <p className="mt-4 rounded-lg bg-red-100 p-3 text-red-700">
+            {error}
           </p>
-
-          <h1 className="mt-3 text-4xl font-bold">Generate Interview Questions</h1>
-
-          <p className="mt-4 text-gray-300">
-            Generate AI interview questions using your uploaded and parsed resume data.
-          </p>
-
-          <button
-            onClick={handleGenerateQuestions}
-            disabled={loading}
-            className="mt-6 rounded-lg bg-green-600 px-5 py-2 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? "Generating..." : "Generate Questions"}
-          </button>
-
-          {error && (
-            <div className="mt-6 rounded-lg border border-red-800 bg-red-950/40 p-4 text-red-300">
-              {error}
-            </div>
-          )}
-        </div>
-
-        {questions.length > 0 && (
-          <div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6">
-            <h2 className="text-2xl font-semibold">Generated Questions</h2>
-
-            <div className="mt-5 space-y-4">
-              {questions.map((question, index) => (
-                <div
-                  key={`${question}-${index}`}
-                  className="rounded-xl border border-gray-800 bg-gray-950 p-4"
-                >
-                  <p className="font-medium">
-                    {index + 1}. {question}
-                  </p>
-
-                  <button
-                    onClick={() => handleSelectQuestion(question)}
-                    className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                  >
-                    Select for Evaluation
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
 
-        {selectedQuestion && (
-          <div className="mt-8 rounded-xl border border-blue-800 bg-blue-950/30 p-5">
-            <p className="text-sm text-blue-300">Selected Question:</p>
-            <p className="mt-2 font-medium">{selectedQuestion}</p>
-
-            <Link
-              href="/evaluate-answer"
-              className="mt-4 inline-block rounded-lg bg-purple-600 px-4 py-2 font-medium text-white hover:bg-purple-700"
+        <div className="mt-8 space-y-4">
+          {questions.map((question, index) => (
+            <div
+              key={index}
+              className="rounded-lg border border-gray-200 bg-gray-50 p-5"
             >
-              Go to Evaluate Answer
-            </Link>
-          </div>
-        )}
-      </section>
+              <p className="font-medium text-gray-900">
+                {index + 1}. {question}
+              </p>
+
+              <button
+                onClick={() => handleEvaluate(question)}
+                className="mt-4 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              >
+                Answer This Question
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </main>
   );
 }

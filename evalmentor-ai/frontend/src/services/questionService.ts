@@ -1,12 +1,23 @@
-import { apiRequest } from "../../lib/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-export interface QuestionResponse {
-  message?: string;
-  questions?: string[];
-}
+export async function generateInterviewQuestions() {
+  const token = localStorage.getItem("token");
 
-export const generateInterviewQuestions = async (): Promise<QuestionResponse> => {
-  return apiRequest<QuestionResponse>("/api/resume/generate-questions", {
+  const response = await fetch(`${API_BASE_URL}/api/resume/generate-questions`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
   });
-};
+
+  const data = await response.json();
+
+  console.log("Generate Questions API Response:", data);
+
+  if (!response.ok) {
+    throw new Error(data.detail || "Failed to generate questions");
+  }
+
+  return data;
+}
