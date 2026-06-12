@@ -18,6 +18,7 @@ type RecentInterview = {
 type DashboardData = {
   message?: string;
   total_interviews?: number;
+  average_score?: number;
   recent_interviews?: RecentInterview[];
 };
 
@@ -181,12 +182,23 @@ export default function DashboardPage() {
           <div className="rounded-3xl border border-white/10 bg-white/10 p-7 shadow-2xl backdrop-blur">
             <h2 className="text-2xl font-semibold text-white">Analytics</h2>
 
-            <div className="mt-5 rounded-2xl bg-white p-6 shadow">
-              <p className="text-gray-600">Total Interviews</p>
+            <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div className="rounded-2xl bg-white p-6 shadow">
+                <p className="text-gray-600">Total Interviews</p>
 
-              <p className="mt-2 text-5xl font-bold text-indigo-700">
-                {dashboardData?.total_interviews || 0}
-              </p>
+                <p className="mt-2 text-5xl font-bold text-indigo-700">
+                  {dashboardData?.total_interviews || 0}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white p-6 shadow">
+                <p className="text-gray-600">Average Score</p>
+
+                <p className="mt-2 text-5xl font-bold text-emerald-700">
+                  {dashboardData?.average_score ?? 0}
+                  <span className="text-2xl">/10</span>
+                </p>
+              </div>
             </div>
           </div>
 
