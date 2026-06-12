@@ -1,4 +1,5 @@
-
+from pydantic import BaseModel
+from typing import Optional
 from app.services.evaluation_service import evaluate_answer, extract_score
 from app.services.groq_service import generate_interview_questions
 from app.services.resume_parser import parse_resume_text
@@ -10,13 +11,21 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from app.utils.dependencies import get_current_user
 from app.database import database
 
+
 router = APIRouter(
     prefix="/api/resume",
     tags=["Resume"]
 )
 
+
 UPLOAD_DIR = "uploads/resumes"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+class EvaluateAnswerRequest(BaseModel):
+    question: str
+    answer: Optional[str] = None
+    user_answer: Optional[str] = None
 
 
 @router.get("/health")
@@ -56,6 +65,7 @@ async def upload_resume(
         "file_size": len(file_content),
         "extracted_text": extracted_text,
         "parsed_data": parsed_data,
+        "created_at": datetime.utcnow()
     }
 
     result = await database["resumes"].insert_one(resume_data)
@@ -103,10 +113,24 @@ async def generate_questions(
 
 @router.post("/evaluate-answer")
 async def evaluate_interview_answer(
-    question: str,
-    answer: str,
+    request: EvaluateAnswerRequest,
     current_user: dict = Depends(get_current_user)
 ):
+    question = request.question
+    answer = request.answer or request.user_answer
+
+    if not question.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Question is required."
+        )
+
+    if not answer or not answer.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Answer is required."
+        )
+
     evaluation = evaluate_answer(question, answer)
     score = extract_score(evaluation)
 
@@ -124,8 +148,13 @@ async def evaluate_interview_answer(
     return {
         "message": "Answer evaluated successfully",
         "interview_id": str(result.inserted_id),
-        "evaluation": evaluation
+        "question": question,
+        "answer": answer,
+        "evaluation": evaluation,
+        "score": score
     }
+
+
 @router.get("/history")
 async def get_interview_history(
     current_user: dict = Depends(get_current_user)
@@ -137,19 +166,21 @@ async def get_interview_history(
     interviews = []
 
     async for interview in interviews_cursor:
-     interviews.append({
-        "interview_id": str(interview["_id"]),
-        "question": interview.get("question"),
-        "answer": interview.get("answer"),
-        "evaluation": interview.get("evaluation"),
-        "score": interview.get("score"),
-        "created_at": interview.get("created_at")
-})  
+        interviews.append({
+            "interview_id": str(interview["_id"]),
+            "question": interview.get("question"),
+            "answer": interview.get("answer"),
+            "evaluation": interview.get("evaluation"),
+            "score": interview.get("score"),
+            "created_at": interview.get("created_at")
+        })
+
     return {
         "message": "Interview history fetched successfully",
         "total_interviews": len(interviews),
         "interviews": interviews
     }
+
 
 @router.get("/dashboard")
 async def dashboard(
@@ -164,9 +195,11 @@ async def dashboard(
     async for interview in interviews_cursor:
         interviews.append({
             "interview_id": str(interview["_id"]),
-            "question": interview["question"],
-            "answer": interview["answer"],
-            "evaluation": interview["evaluation"]
+            "question": interview.get("question"),
+            "answer": interview.get("answer"),
+            "evaluation": interview.get("evaluation"),
+            "score": interview.get("score"),
+            "created_at": interview.get("created_at")
         })
 
     total_interviews = len(interviews)
