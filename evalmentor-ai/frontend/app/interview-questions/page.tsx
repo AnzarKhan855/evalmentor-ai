@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { generateInterviewQuestions } from "../src/services/questionService";
+import { generateInterviewQuestions } from "../../src/services/questionService";
 
 export default function InterviewQuestionsPage() {
   const router = useRouter();
