@@ -10,8 +10,9 @@ type EvaluationResponse = {
   evaluation?: unknown;
   feedback?: unknown;
   result?: unknown;
-  detail?: string;
+  detail?: unknown;
 };
+
 export default function EvaluateAnswerPage() {
   const router = useRouter();
 
@@ -38,6 +39,56 @@ export default function EvaluateAnswerPage() {
       localStorage.getItem("accessToken") ||
       localStorage.getItem("authToken")
     );
+  };
+
+  const formatErrorDetail = (detail: unknown): string => {
+    if (typeof detail === "string") {
+      return detail;
+    }
+
+    if (Array.isArray(detail)) {
+      return detail
+        .map((item) => {
+          if (typeof item === "string") return item;
+
+          if (typeof item === "object" && item !== null && "msg" in item) {
+            return String((item as { msg: unknown }).msg);
+          }
+
+          return JSON.stringify(item);
+        })
+        .join("\n");
+    }
+
+    if (typeof detail === "object" && detail !== null) {
+      return JSON.stringify(detail, null, 2);
+    }
+
+    return "Failed to evaluate answer.";
+  };
+
+  const formatEvaluation = (value: unknown): string => {
+    if (typeof value === "string") {
+      return value;
+    }
+
+    if (Array.isArray(value)) {
+      return value
+        .map((item, index) => {
+          if (typeof item === "string") {
+            return item;
+          }
+
+          return `Result ${index + 1}:\n${JSON.stringify(item, null, 2)}`;
+        })
+        .join("\n\n");
+    }
+
+    if (typeof value === "object" && value !== null) {
+      return JSON.stringify(value, null, 2);
+    }
+
+    return String(value);
   };
 
   const handleEvaluateAnswer = async () => {
@@ -75,6 +126,7 @@ export default function EvaluateAnswerPage() {
           body: JSON.stringify({
             question,
             answer,
+            user_answer: answer,
           }),
         }
       );
@@ -92,15 +144,13 @@ export default function EvaluateAnswerPage() {
       console.log("Evaluate Answer API Response:", data);
 
       if (!response.ok) {
-        throw new Error(data.detail || "Failed to evaluate answer.");
+        throw new Error(formatErrorDetail(data.detail));
       }
 
-      const rawEvaluation = data.evaluation || data.feedback || data.result || data;
-      
-      const evaluationText =
-       typeof rawEvaluation === "string"
-        ? rawEvaluation
-       : JSON.stringify(rawEvaluation, null, 2);
+      const rawEvaluation =
+        data.evaluation || data.feedback || data.result || data;
+
+      const evaluationText = formatEvaluation(rawEvaluation);
 
       setEvaluation(evaluationText);
     } catch (err) {
@@ -132,7 +182,7 @@ export default function EvaluateAnswerPage() {
         </p>
 
         {error && (
-          <p className="mb-4 rounded-lg bg-red-100 p-3 text-red-700">
+          <p className="mb-4 whitespace-pre-wrap rounded-lg bg-red-100 p-3 text-red-700">
             {error}
           </p>
         )}
