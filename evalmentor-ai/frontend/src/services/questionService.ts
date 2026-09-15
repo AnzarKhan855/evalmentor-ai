@@ -1,6 +1,13 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { getApiBaseUrl } from "../../lib/config";
 
-export async function generateInterviewQuestions() {
+export interface QuestionResponse {
+  success?: boolean;
+  message?: string;
+  questions?: string[] | string;
+  detail?: string;
+}
+
+export async function generateInterviewQuestions(): Promise<QuestionResponse> {
   const token =
     localStorage.getItem("token") ||
     localStorage.getItem("access_token") ||
@@ -8,40 +15,78 @@ export async function generateInterviewQuestions() {
     localStorage.getItem("authToken");
 
   if (!token) {
-    throw new Error("Please login again. Token not found.");
+    throw new Error("Please login again. Authentication token not found.");
   }
 
-  if (!API_BASE_URL) {
+  const apiBaseUrl = getApiBaseUrl();
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}/api/resume/generate-questions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (networkError) {
+    console.error("Network or CORS error connecting to backend:", networkError);
     throw new Error(
-      "Backend API URL is missing. Check NEXT_PUBLIC_API_BASE_URL in Vercel."
+      "Unable to connect to the backend service. Please check your connection or try again shortly."
     );
   }
-
-  const response = await fetch(`${API_BASE_URL}/api/resume/generate-questions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
 
   const contentType = response.headers.get("content-type");
+  let data: QuestionResponse | null = null;
 
-  if (!contentType || !contentType.includes("application/json")) {
-    const text = await response.text();
-    console.error("Non-JSON response from backend:", text);
-
-    throw new Error(
-      "Backend returned HTML instead of JSON. Check NEXT_PUBLIC_API_BASE_URL or backend route."
-    );
+  if (contentType && contentType.includes("application/json")) {
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
   }
 
-  const data = await response.json();
-
-  console.log("Generate Questions API Response:", data);
-
   if (!response.ok) {
-    throw new Error(data.detail || "Failed to generate questions");
+    const errorDetail = data?.detail;
+
+    switch (response.status) {
+      case 400:
+        throw new Error(
+          errorDetail ||
+            "Resume text could not be extracted. Please upload a PDF with selectable text."
+        );
+      case 401:
+        throw new Error("Your session has expired. Please log in again.");
+      case 403:
+        throw new Error("You do not have permission to access this resource.");
+      case 404:
+        throw new Error(
+          errorDetail || "No resume found. Please upload a resume first."
+        );
+      case 429:
+        throw new Error(
+          errorDetail ||
+            "AI service is temporarily rate limited. Please wait a moment and try again."
+        );
+      case 502:
+        throw new Error(
+          errorDetail ||
+            "AI question generation service is temporarily unavailable. Please try again shortly."
+        );
+      case 500:
+        throw new Error(
+          errorDetail ||
+            "A server error occurred while generating questions. Please try again later."
+        );
+      default:
+        throw new Error(
+          errorDetail || `Failed to generate questions (Status ${response.status}).`
+        );
+    }
+  }
+
+  if (!data) {
+    throw new Error("Received an invalid response from the server.");
   }
 
   return data;

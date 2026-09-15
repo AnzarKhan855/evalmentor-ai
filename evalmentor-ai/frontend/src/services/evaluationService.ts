@@ -9,19 +9,21 @@ export interface EvaluationResponse {
   message?: string;
   interview_id?: string;
   evaluation?: string;
+  score?: number;
 }
 
 export const evaluateInterviewAnswer = async (
   data: EvaluationRequest
 ): Promise<EvaluationResponse> => {
-  const params = new URLSearchParams();
-  params.append("question", data.question);
-  params.append("answer", data.answer);
-
   return apiRequest<EvaluationResponse>(
-    `/api/resume/evaluate-answer?${params.toString()}`,
+    "/api/resume/evaluate-answer",
     {
       method: "POST",
+      body: JSON.stringify({
+        question: data.question,
+        answer: data.answer,
+        user_answer: data.answer,
+      }),
     }
   );
 };

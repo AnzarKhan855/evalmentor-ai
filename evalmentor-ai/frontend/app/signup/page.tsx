@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+import { getApiBaseUrl } from "@/lib/config";
 
 type SignupResponse = {
   message?: string;
@@ -46,19 +44,17 @@ export default function SignupPage() {
       return JSON.stringify(detail, null, 2);
     }
 
-    return "Signup failed. Please try again.";
+    return "Signup failed.";
   };
 
-  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       setLoading(true);
       setError("");
 
-      if (!API_BASE_URL) {
-        throw new Error("Backend API URL is missing.");
-      }
+      const apiBaseUrl = getApiBaseUrl();
 
       if (!name.trim()) {
         throw new Error("Please enter your name.");
@@ -72,17 +68,25 @@ export default function SignupPage() {
         throw new Error("Please enter your password.");
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-        }),
-      });
+      let response: Response;
+      try {
+        response = await fetch(`${apiBaseUrl}/api/auth/signup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+          }),
+        });
+      } catch (netErr) {
+        console.error("Network error during signup:", netErr);
+        throw new Error(
+          "Unable to connect to the authentication server. Please check your internet connection."
+        );
+      }
 
       const contentType = response.headers.get("content-type");
 

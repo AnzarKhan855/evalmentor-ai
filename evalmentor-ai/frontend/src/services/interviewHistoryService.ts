@@ -1,5 +1,4 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+import { getApiBaseUrl } from "../../lib/config";
 
 export interface InterviewHistoryItem {
   interview_id: string;
@@ -11,17 +10,32 @@ export interface InterviewHistoryItem {
 }
 
 export const getInterviewHistory = async (): Promise<InterviewHistoryItem[]> => {
-  const token = localStorage.getItem("token");
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("access_token") ||
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("authToken");
 
-  const response = await fetch(`${API_BASE_URL}/api/resume/history`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const apiBaseUrl = getApiBaseUrl();
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}/api/resume/history`, {
+      method: "GET",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+  } catch (err) {
+    console.error("Network error fetching interview history:", err);
+    throw new Error(
+      "Unable to connect to the backend server. Please check your internet connection."
+    );
+  }
 
   if (!response.ok) {
-    throw new Error("Failed to fetch interview history");
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.detail || "Failed to fetch interview history");
   }
 
   const data = await response.json();

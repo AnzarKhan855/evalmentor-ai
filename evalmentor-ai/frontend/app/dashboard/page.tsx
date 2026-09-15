@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+import { getApiBaseUrl } from "@/lib/config";
 
 type RecentInterview = {
   interview_id: string;
@@ -64,16 +62,22 @@ export default function DashboardPage() {
           return;
         }
 
-        if (!API_BASE_URL) {
-          throw new Error("Backend API URL is missing.");
-        }
+        const apiBaseUrl = getApiBaseUrl();
 
-        const response = await fetch(`${API_BASE_URL}/api/resume/dashboard`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        let response: Response;
+        try {
+          response = await fetch(`${apiBaseUrl}/api/resume/dashboard`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        } catch (netErr) {
+          console.error("Network error fetching dashboard:", netErr);
+          throw new Error(
+            "Unable to connect to the backend service. Please check your network connection."
+          );
+        }
 
         const contentType = response.headers.get("content-type");
 

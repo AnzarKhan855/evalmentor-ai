@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+import { getApiBaseUrl } from "@/lib/config";
 
 type EvaluationResponse = {
   evaluation?: unknown;
@@ -103,9 +101,7 @@ export default function EvaluateAnswerPage() {
         throw new Error("Please login again. Token not found.");
       }
 
-      if (!API_BASE_URL) {
-        throw new Error("Backend API URL is missing.");
-      }
+      const apiBaseUrl = getApiBaseUrl();
 
       if (!question.trim()) {
         throw new Error("Question is missing. Please select a question again.");
@@ -115,21 +111,29 @@ export default function EvaluateAnswerPage() {
         throw new Error("Please write your answer first.");
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/resume/evaluate-answer`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            question,
-            answer,
-            user_answer: answer,
-          }),
-        }
-      );
+      let response: Response;
+      try {
+        response = await fetch(
+          `${apiBaseUrl}/api/resume/evaluate-answer`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              question: question.trim(),
+              answer: answer.trim(),
+              user_answer: answer.trim(),
+            }),
+          }
+        );
+      } catch (netErr) {
+        console.error("Network error connecting to evaluation endpoint:", netErr);
+        throw new Error(
+          "Unable to connect to the evaluation service. Please check your internet connection."
+        );
+      }
 
       const contentType = response.headers.get("content-type");
 

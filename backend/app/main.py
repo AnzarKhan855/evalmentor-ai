@@ -36,6 +36,13 @@ allowed_origins = [
 if frontend_url:
     allowed_origins.append(frontend_url)
 
+import logging
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
+
+logger = logging.getLogger("evalmentor")
+logging.basicConfig(level=logging.INFO)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -43,6 +50,32 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(
+        f"Unhandled server error on {request.method} {request.url.path}: {exc}",
+        exc_info=True,
+    )
+
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin and (origin in allowed_origins or "*" in allowed_origins):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+        headers["Access-Control-Allow-Methods"] = "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT"
+        headers["Access-Control-Allow-Headers"] = "*"
+
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "success": False,
+            "detail": "An unexpected server error occurred. Please try again later.",
+        },
+        headers=headers,
+    )
+
 
 app.include_router(auth_router)
 app.include_router(profile_router)

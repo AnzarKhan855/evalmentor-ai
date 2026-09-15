@@ -97,15 +97,16 @@ async def generate_questions(
 
     resume_text = latest_resume.get("extracted_text")
 
-    if not resume_text:
+    if not resume_text or not str(resume_text).strip():
         raise HTTPException(
             status_code=400,
-            detail="Resume text not found. Please upload resume again."
+            detail="Resume text not found or empty. Please upload a valid PDF resume with extractable text."
         )
 
-    questions = generate_interview_questions(resume_text)
+    questions = generate_interview_questions(str(resume_text).strip())
 
     return {
+        "success": True,
         "message": "Interview questions generated successfully",
         "questions": questions
     }
@@ -119,7 +120,7 @@ async def evaluate_interview_answer(
     question = request.question
     answer = request.answer or request.user_answer
 
-    if not question.strip():
+    if not question or not question.strip():
         raise HTTPException(
             status_code=400,
             detail="Question is required."
@@ -131,13 +132,13 @@ async def evaluate_interview_answer(
             detail="Answer is required."
         )
 
-    evaluation = evaluate_answer(question, answer)
+    evaluation = evaluate_answer(question.strip(), answer.strip())
     score = extract_score(evaluation)
 
     interview_data = {
         "user_id": str(current_user["_id"]),
-        "question": question,
-        "answer": answer,
+        "question": question.strip(),
+        "answer": answer.strip(),
         "evaluation": evaluation,
         "score": score,
         "created_at": datetime.utcnow()
@@ -146,10 +147,11 @@ async def evaluate_interview_answer(
     result = await database["interviews"].insert_one(interview_data)
 
     return {
+        "success": True,
         "message": "Answer evaluated successfully",
         "interview_id": str(result.inserted_id),
-        "question": question,
-        "answer": answer,
+        "question": question.strip(),
+        "answer": answer.strip(),
         "evaluation": evaluation,
         "score": score
     }
