@@ -1,14 +1,45 @@
-
-
+# Python virtual environments & bytecode
+venv/
 backend/venv/
-backend/.env
-.env
 __pycache__/
-*.pyc
-.DS_Store
+*.py[cod]
+*$py.class
+*.pytest_cache/
+.coverage
+htmlcov/
+importlog.txt
+
+# Resume uploads (local storage)
+backend/uploads/resumes/*
+!backend/uploads/resumes/.gitkeep
+
+# Environment variables & secrets (allow .env.example templates)
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+evalmentor-ai/frontend/.env.local
+evalmentor-ai/frontend/.env.*.local
+!evalmentor-ai/frontend/.env.example
+
+# Node / Next.js
 node_modules/
+evalmentor-ai/frontend/node_modules/
 .next/
+evalmentor-ai/frontend/.next/
+out/
+evalmentor-ai/frontend/out/
+build/
+evalmentor-ai/frontend/build/
 
-
-git init
-
+# Operating System & IDE artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
