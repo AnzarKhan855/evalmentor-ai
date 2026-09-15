@@ -219,9 +219,9 @@ class EvalMentorApiTestCase(unittest.TestCase):
                 self.assertIn("Score: 9/10", data.get("evaluation"))
 
     def test_model_configuration_used_consistently(self):
-        """Test that llama-3.3-70b-versatile is passed to Groq for both questions and evaluation."""
+        """Test that openai/gpt-oss-120b is passed to Groq for both questions and evaluation."""
         from app.config import GROQ_MODEL
-        self.assertEqual(GROQ_MODEL, "llama-3.3-70b-versatile")
+        self.assertEqual(GROQ_MODEL, "openai/gpt-oss-120b")
 
         fake_user = {"_id": "test-user-123", "name": "Test User", "email": "test@example.com"}
         app.dependency_overrides[get_current_user] = lambda: fake_user
@@ -247,7 +247,7 @@ class EvalMentorApiTestCase(unittest.TestCase):
                 res_q = self.client.post("/api/resume/generate-questions", headers=self.headers)
                 self.assertEqual(res_q.status_code, 200)
                 call_args_q = client_instance.chat.completions.create.call_args
-                self.assertEqual(call_args_q.kwargs.get("model"), "llama-3.3-70b-versatile")
+                self.assertEqual(call_args_q.kwargs.get("model"), "openai/gpt-oss-120b")
 
             with patch("app.services.evaluation_service.get_groq_client") as mock_eval_client:
                 eval_instance = MagicMock()
@@ -262,7 +262,7 @@ class EvalMentorApiTestCase(unittest.TestCase):
                 )
                 self.assertEqual(res_e.status_code, 200)
                 call_args_e = eval_instance.chat.completions.create.call_args
-                self.assertEqual(call_args_e.kwargs.get("model"), "llama-3.3-70b-versatile")
+                self.assertEqual(call_args_e.kwargs.get("model"), "openai/gpt-oss-120b")
 
 
 if __name__ == "__main__":
