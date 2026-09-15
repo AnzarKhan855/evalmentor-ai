@@ -218,6 +218,52 @@ class EvalMentorApiTestCase(unittest.TestCase):
                 self.assertEqual(data.get("score"), 9.0)
                 self.assertIn("Score: 9/10", data.get("evaluation"))
 
+    def test_model_configuration_used_consistently(self):
+        """Test that llama-3.3-70b-versatile is passed to Groq for both questions and evaluation."""
+        from app.config import GROQ_MODEL
+        self.assertEqual(GROQ_MODEL, "llama-3.3-70b-versatile")
+
+        fake_user = {"_id": "test-user-123", "name": "Test User", "email": "test@example.com"}
+        app.dependency_overrides[get_current_user] = lambda: fake_user
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "1. Test question?"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+
+        with patch("app.routes.resume.database") as mock_db:
+            mock_resumes = MagicMock()
+            mock_resumes.find_one = AsyncMock(return_value={"_id": "r1", "extracted_text": "Sample resume text"})
+            mock_interviews = MagicMock()
+            mock_interviews.insert_one = AsyncMock(return_value=MagicMock(inserted_id="int_123"))
+            mock_db.__getitem__.side_effect = lambda key: mock_resumes if key == "resumes" else mock_interviews
+
+            with patch("app.services.groq_service.get_groq_client") as mock_groq_client:
+                client_instance = MagicMock()
+                client_instance.chat.completions.create.return_value = mock_response
+                mock_groq_client.return_value = client_instance
+
+                # Test question generation model argument
+                res_q = self.client.post("/api/resume/generate-questions", headers=self.headers)
+                self.assertEqual(res_q.status_code, 200)
+                call_args_q = client_instance.chat.completions.create.call_args
+                self.assertEqual(call_args_q.kwargs.get("model"), "llama-3.3-70b-versatile")
+
+            with patch("app.services.evaluation_service.get_groq_client") as mock_eval_client:
+                eval_instance = MagicMock()
+                eval_instance.chat.completions.create.return_value = mock_response
+                mock_eval_client.return_value = eval_instance
+
+                # Test evaluate answer model argument
+                res_e = self.client.post(
+                    "/api/resume/evaluate-answer",
+                    headers=self.headers,
+                    json={"question": "Test Q?", "answer": "Test A."}
+                )
+                self.assertEqual(res_e.status_code, 200)
+                call_args_e = eval_instance.chat.completions.create.call_args
+                self.assertEqual(call_args_e.kwargs.get("model"), "llama-3.3-70b-versatile")
+
 
 if __name__ == "__main__":
     unittest.main()

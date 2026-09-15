@@ -10,6 +10,7 @@ from groq import (
     BadRequestError,
     APIStatusError,
 )
+from app.config import GROQ_MODEL
 from app.services.groq_service import get_groq_client
 
 logger = logging.getLogger("evalmentor.evaluation")
@@ -54,7 +55,7 @@ Return the response in clear sections.
 
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model=GROQ_MODEL,
             messages=[
                 {
                     "role": "system",
