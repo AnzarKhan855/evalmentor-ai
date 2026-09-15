@@ -58,9 +58,7 @@
 
 ---
 
-### AI Answer Evaluation & Scoring
-*Multi-factor feedback analysis providing quantitative scores (out of 10), critique, and sample ideal answers.*
-![Answer Evaluation](docs/screenshots/answer-evaluation.png)
+
 
 ---
 
